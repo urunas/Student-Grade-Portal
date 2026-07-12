@@ -1,128 +1,145 @@
-﻿
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
-class Program
+internal sealed record Student(
+    int Number,
+    string FullName,
+    int MidtermGrade,
+    int FinalGrade,
+    double Average,
+    string LetterGrade);
+
+internal static class Program
 {
-    static int InputInt(string prompt)
+    private const double MidtermWeight = 0.40;
+    private const double FinalWeight = 0.60;
+
+    private static void Main()
     {
-        while (true)
+        CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
+        Console.WriteLine("Student Grade Portal");
+        Console.WriteLine("--------------------");
+
+        int studentCount = ReadPositiveInt("Enter the number of students: ");
+        List<Student> students = new();
+
+        for (int i = 1; i <= studentCount; i++)
         {
-            try
-            {
-                Console.Write(prompt);
-                return int.Parse(Console.ReadLine() ?? "");
-            }
-            catch (FormatException)
-            {
-                Console.WriteLine("Hatalı giriş! Lütfen sayı giriniz.");
-            }
-            catch (OverflowException)
-            {
-                Console.WriteLine("Hatalı giriş! Lütfen geçerli bir sayı giriniz.");
-            }
+            Console.WriteLine();
+            Console.WriteLine($"Student {i}");
+
+            int number = ReadPositiveInt("Student number: ");
+            string fullName = ReadRequiredText("Full name: ");
+            int midtermGrade = ReadGrade("Midterm grade (0-100): ");
+            int finalGrade = ReadGrade("Final grade (0-100): ");
+
+            double average = CalculateAverage(midtermGrade, finalGrade);
+            string letterGrade = GetLetterGrade(average);
+
+            students.Add(new Student(number, fullName, midtermGrade, finalGrade, average, letterGrade));
+
+            Console.WriteLine($"Average: {average:F2} | Letter grade: {letterGrade}");
         }
+
+        PrintSummary(students);
     }
 
-    static int InputIntInRange(string prompt, int minVal, int maxVal)
-    {
-        while (true)
-        {
-            try
-            {
-                Console.Write(prompt);
-                int v = int.Parse(Console.ReadLine() ?? "");
-
-                if (v >= minVal && v <= maxVal)
-                    return v;
-
-                Console.WriteLine($"Hatalı değer! {minVal}-{maxVal} arasında olmalı.");
-            }
-            catch (FormatException)
-            {
-                Console.WriteLine("Hatalı giriş! Lütfen sayı giriniz.");
-            }
-            catch (OverflowException)
-            {
-                Console.WriteLine("Hatalı giriş! Lütfen geçerli bir sayı giriniz.");
-            }
-        }
-    }
-
-    static string InputNonEmptyStr(string prompt)
+    private static int ReadPositiveInt(string prompt)
     {
         while (true)
         {
             Console.Write(prompt);
-            string s = (Console.ReadLine() ?? "").Trim();
-            if (!string.IsNullOrEmpty(s))
-                return s;
+            string input = Console.ReadLine()?.Trim() ?? string.Empty;
 
-            Console.WriteLine("Boş bırakılamaz. Tekrar giriniz.");
+            if (int.TryParse(input, out int value) && value > 0)
+            {
+                return value;
+            }
+
+            Console.WriteLine("Please enter a valid positive number.");
         }
     }
 
-    static string HarfNotuBul(double ortalama)
+    private static int ReadGrade(string prompt)
     {
-        if (ortalama >= 85) return "AA";
-        else if (ortalama >= 70) return "BA";
-        else if (ortalama >= 60) return "BB";
-        else if (ortalama >= 50) return "CB";
-        else if (ortalama >= 40) return "CC";
-        else if (ortalama >= 30) return "DC";
-        else if (ortalama >= 20) return "DD";
-        else if (ortalama >= 10) return "FD";
-        else return "FF";
-    }
-
-    static void Main()
-    {
-        // Öğrenci sayısı isteniyor
-        int ogrenciSayisi;
         while (true)
         {
-            ogrenciSayisi = InputInt("Öğrenci sayısını giriniz: ");
-            if (ogrenciSayisi > 0)
-                break;
+            Console.Write(prompt);
+            string input = Console.ReadLine()?.Trim() ?? string.Empty;
 
-            Console.WriteLine("Öğrenci sayısı 0'dan büyük olmalıdır.");
+            if (int.TryParse(input, out int grade) && grade >= 0 && grade <= 100)
+            {
+                return grade;
+            }
+
+            Console.WriteLine("Please enter a valid grade between 0 and 100.");
         }
+    }
 
-        double toplamOrtalama = 0.0;
-        double? enYuksek = null;
-        double? enDusuk = null;
-
-        for (int i = 1; i <= ogrenciSayisi; i++)
+    private static string ReadRequiredText(string prompt)
+    {
+        while (true)
         {
-            Console.WriteLine($"\n--- {i}. Öğrenci ---");
+            Console.Write(prompt);
+            string input = Console.ReadLine()?.Trim() ?? string.Empty;
 
-            int numara = InputInt("Öğrenci numarası: ");
-            string adSoyad = InputNonEmptyStr("Öğrenci adı soyadı: ");
+            if (!string.IsNullOrWhiteSpace(input))
+            {
+                return input;
+            }
 
-            int vize = InputIntInRange("Vize notu (0-100): ", 0, 100);
-            int final = InputIntInRange("Final notu (0-100): ", 0, 100);
+            Console.WriteLine("Name cannot be empty.");
+        }
+    }
 
-            // Ortalama ve harf notu
-            double ortalama = vize * 0.40 + final * 0.60;
-            string harfNotu = HarfNotuBul(ortalama);
+    private static double CalculateAverage(int midtermGrade, int finalGrade)
+    {
+        return midtermGrade * MidtermWeight + finalGrade * FinalWeight;
+    }
 
-            Console.WriteLine($"Ortalama: {ortalama:F2} | Harf Notu: {harfNotu}");
+    private static string GetLetterGrade(double average)
+    {
+        if (average >= 85) return "AA";
+        if (average >= 70) return "BA";
+        if (average >= 60) return "BB";
+        if (average >= 50) return "CB";
+        if (average >= 40) return "CC";
+        if (average >= 30) return "DC";
+        if (average >= 20) return "DD";
+        if (average >= 10) return "FD";
+        return "FF";
+    }
 
-            // İstatistik güncelleme
-            toplamOrtalama += ortalama;
+    private static void PrintSummary(IReadOnlyCollection<Student> students)
+    {
+        double classAverage = students.Average(student => student.Average);
+        double highestAverage = students.Max(student => student.Average);
+        double lowestAverage = students.Min(student => student.Average);
 
-            if (enYuksek == null || ortalama > enYuksek.Value)
-                enYuksek = ortalama;
+        string highestStudents = string.Join(", ",
+            students.Where(student => student.Average == highestAverage).Select(student => student.FullName));
 
-            if (enDusuk == null || ortalama < enDusuk.Value)
-                enDusuk = ortalama;
+        string lowestStudents = string.Join(", ",
+            students.Where(student => student.Average == lowestAverage).Select(student => student.FullName));
+
+        Console.WriteLine();
+        Console.WriteLine("Class Summary");
+        Console.WriteLine("-------------");
+        Console.WriteLine($"{"No",-10} {"Full Name",-24} {"Midterm",8} {"Final",8} {"Average",9} {"Letter",8}");
+        Console.WriteLine(new string('-', 75));
+
+        foreach (Student student in students)
+        {
+            Console.WriteLine(
+                $"{student.Number,-10} {student.FullName,-24} {student.MidtermGrade,8} {student.FinalGrade,8} {student.Average,9:F2} {student.LetterGrade,8}");
         }
 
-        // Son olarak
-        double sinifOrtalamasi = toplamOrtalama / ogrenciSayisi;
-
-        Console.WriteLine("\n=== SINIF SONUÇLARI ===");
-        Console.WriteLine($"Sınıf ortalaması: {sinifOrtalamasi:F2}");
-        Console.WriteLine($"En yüksek not (ortalama): {enYuksek.Value:F2}");
-        Console.WriteLine($"En düşük not (ortalama): {enDusuk.Value:F2}");
+        Console.WriteLine(new string('-', 75));
+        Console.WriteLine($"Class average: {classAverage:F2}");
+        Console.WriteLine($"Highest average: {highestAverage:F2} ({highestStudents})");
+        Console.WriteLine($"Lowest average: {lowestAverage:F2} ({lowestStudents})");
     }
 }
